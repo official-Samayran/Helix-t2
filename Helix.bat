@@ -1,16 +1,49 @@
 @echo off
-title HELIX Launcher
+title HELIX STARTUP
+color 0A
 
-cd /d "E:\Helix"
+echo =========================================
+echo STARTING HELIX
+echo =========================================
 
-:: START MAIN.PY MINIMIZED
-start "" /MIN cmd /c python "E:\Helix\main.py"
+:: =========================================
+:: START OLLAMA
+:: =========================================
 
-:: START FASTAPI SERVER
-start "" /MIN cmd /c uvicorn api.server:app --host 127.0.0.1 --port 8000
+echo.
+echo [1/3] Starting Ollama...
 
-cd /d "E:\Helix\ui\helix-dashboard"
+start "Ollama" cmd /k "ollama serve"
 
-start "" /MIN cmd /c npm run dev
+timeout /t 5 >nul
 
-exit
+:: =========================================
+:: START BACKEND
+:: =========================================
+
+echo.
+echo [2/3] Starting Backend...
+
+cd /d E:\Helix
+
+start "Helix Backend" cmd /k "uvicorn api.server:app --host 127.0.0.1 --port 8000 --reload"
+
+timeout /t 5 >nul
+
+:: =========================================
+:: START ELECTRON APP
+:: =========================================
+
+echo.
+echo [3/3] Starting Electron App...
+
+cd /d E:\Helix\ui\helix-dashboard
+
+start "Helix Electron" cmd /k "npm run dev"
+
+echo.
+echo =========================================
+echo HELIX STARTED
+echo =========================================
+
+pause
