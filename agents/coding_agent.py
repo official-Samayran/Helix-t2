@@ -17,6 +17,8 @@ from models.project_state import (
 
 class CodingAgent:
 
+    MODEL = "deepseek-coder-v2:lite"
+
     @staticmethod
     def extract_json(text):
 
@@ -66,11 +68,10 @@ USER REQUEST:
 
         raw_response = ""
 
-        for chunk in OllamaClient.stream_generate(
+        raw_response = OllamaClient.stream_generate(
+            model=CodingAgent.MODEL,
             prompt=planner_prompt
-        ):
-
-            raw_response += chunk
+        )
 
         print("\nRAW RESPONSE:\n")
         print(raw_response)
@@ -175,13 +176,10 @@ IMPORTANT:
 - No explanations
 """
 
-            generated_code = ""
-
-            for chunk in OllamaClient.stream_generate(
+            generated_code = OllamaClient.stream_generate(
+                model=CodingAgent.MODEL,
                 prompt=generation_prompt
-            ):
-
-                generated_code += chunk
+            )
 
             generated_code = generated_code.strip()
 
@@ -235,3 +233,4 @@ IMPORTANT:
             "project_path": project_path,
             "state": state.to_dict()
         }
+    
