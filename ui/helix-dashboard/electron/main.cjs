@@ -1,112 +1,155 @@
-const { app, BrowserWindow, Tray, Menu } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, Tray, Menu } = require("electron");
+const path = require("path");
 
-let mainWindow
-let tray
+let mainWindow;
+let tray;
+let isQuiting = false;
 
-const gotTheLock = app.requestSingleInstanceLock()
+const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  app.quit()
-  process.exit(0)
+    app.quit();
+    process.exit(0);
 }
 
 function createWindow() {
 
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    show: true,
-    autoHideMenuBar: true,
-    backgroundColor: '#0a0a0a',
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
+    mainWindow = new BrowserWindow({
+        width: 1400,
+        height: 900,
+        minWidth: 1100,
+        minHeight: 700,
+        show: false,
+        autoHideMenuBar: true,
+        backgroundColor: "#050505",
 
-  mainWindow.loadURL('http://localhost:5173')
+        webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: false
+        }
+    });
 
-  mainWindow.webContents.on(
-    'render-process-gone',
-    () => {
-      console.log('Renderer crashed')
-    }
-  )
+    mainWindow.loadURL("http://127.0.0.1:5173");
 
-  mainWindow.webContents.on(
-    'did-fail-load',
-    () => {
-      console.log('Failed loading UI')
-    }
-  )
+    mainWindow.once("ready-to-show", () => {
+        mainWindow.show();
+        mainWindow.focus();
+    });
 
-  mainWindow.on('minimize', (event) => {
-    event.preventDefault()
-    mainWindow.hide()
-  })
+    mainWindow.webContents.openDevTools({
+        mode: "detach"
+    });
 
-  mainWindow.on('close', (event) => {
-    event.preventDefault()
-    mainWindow.hide()
-  })
+    mainWindow.webContents.on(
+        "render-process-gone",
+        (_, details) => {
+
+            console.error(
+                "Renderer crashed:",
+                details
+            );
+
+            mainWindow.reload();
+        }
+    );
+
+    mainWindow.webContents.on(
+        "did-fail-load",
+        (_, errorCode, errorDescription) => {
+
+            console.error(
+                "Failed loading UI:",
+                errorCode,
+                errorDescription
+            );
+        }
+    );
+
+    mainWindow.webContents.on(
+        "console-message",
+        (_, level, message) => {
+
+            console.log(
+                `[Renderer ${level}]`,
+                message
+            );
+        }
+    );
+
+    mainWindow.on("close", (event) => {
+
+        if (!isQuiting) {
+
+            event.preventDefault();
+
+            mainWindow.hide();
+        }
+    });
 }
 
 function createTray() {
 
-  const iconPath = path.join(
-    __dirname,
-    'icon.png'
-  )
+    const iconPath = path.join(
+        __dirname,
+        "icon.png"
+    );
 
-  tray = new Tray(iconPath)
+    tray = new Tray(iconPath);
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open HELIX',
-      click: () => {
-        mainWindow.show()
-      }
-    },
-    {
-      label: 'Hide',
-      click: () => {
-        mainWindow.hide()
-      }
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        app.exit()
-      }
-    }
-  ])
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: "Open HELIX",
+            click: () => {
+                mainWindow.show();
+            }
+        },
 
-  tray.setToolTip('HELIX')
+        {
+            label: "Reload",
+            click: () => {
+                mainWindow.reload();
+            }
+        },
 
-  tray.setContextMenu(contextMenu)
+        {
+            label: "Quit",
+            click: () => {
 
-  tray.on('click', () => {
+                isQuiting = true;
 
-    if (mainWindow.isVisible()) {
-      mainWindow.hide()
-    }
+                app.quit();
+            }
+        }
+    ]);
 
-    else {
-      mainWindow.show()
-    }
+    tray.setToolTip("HELIX");
 
-  })
+    tray.setContextMenu(contextMenu);
+
+    tray.on("click", () => {
+
+        if (mainWindow.isVisible()) {
+            mainWindow.hide();
+        }
+
+        else {
+            mainWindow.show();
+        }
+    });
 }
 
 app.whenReady().then(() => {
 
-  createWindow()
+    createWindow();
 
-  createTray()
+    createTray();
+});
 
-})
+app.on("before-quit", () => {
+    isQuiting = true;
+});
 
-app.on('window-all-closed', (e) => {
-  e.preventDefault()
-})
+app.on("window-all-closed", (e) => {
+    e.preventDefault();
+});

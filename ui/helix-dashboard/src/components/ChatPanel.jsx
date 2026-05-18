@@ -16,7 +16,7 @@ export default function ChatPanel() {
             behavior: "smooth"
         });
 
-    }, [messages]);
+    }, [messages, loading]);
 
     async function sendMessage() {
 
@@ -24,7 +24,7 @@ export default function ChatPanel() {
             return;
         }
 
-        const prompt = input;
+        const prompt = input.trim();
 
         setMessages(prev => [
             ...prev,
@@ -44,28 +44,69 @@ export default function ChatPanel() {
                 "http://127.0.0.1:8000/chat",
                 {
                     method: "POST",
+
                     headers: {
                         "Content-Type": "application/json"
                     },
+
                     body: JSON.stringify({
                         prompt
                     })
                 }
             );
 
-            if (!response.ok) {
-                throw new Error("Failed to connect to HELIX backend");
+            const rawText = await response.text();
+
+            let data = {};
+
+            try {
+
+                data = JSON.parse(rawText);
+
             }
 
-            const data = await response.json();
+            catch {
+
+                data = {
+                    response: rawText
+                };
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data?.detail ||
+                    data?.response ||
+                    "Backend request failed"
+                );
+            }
+
+            let content = "";
+
+            if (typeof data === "string") {
+
+                content = data;
+            }
+
+            else if (typeof data?.response === "string") {
+
+                content = data.response;
+            }
+
+            else {
+
+                content = JSON.stringify(
+                    data,
+                    null,
+                    2
+                );
+            }
 
             setMessages(prev => [
                 ...prev,
                 {
                     role: "assistant",
-                    content:
-                        data.response ||
-                        "No response received from HELIX."
+                    content
                 }
             ]);
 
@@ -73,20 +114,22 @@ export default function ChatPanel() {
 
         catch (error) {
 
+            console.error(error);
+
             setMessages(prev => [
                 ...prev,
                 {
                     role: "assistant",
-                    content: error.message
+                    content:
+                        error?.message ||
+                        "Unknown error occurred"
                 }
             ]);
-
         }
 
         finally {
 
             setLoading(false);
-
         }
     }
 
@@ -161,6 +204,7 @@ export default function ChatPanel() {
                             key={index}
                             style={{
                                 display: "flex",
+
                                 justifyContent:
                                     message.role === "user"
                                         ? "flex-end"
@@ -183,8 +227,13 @@ export default function ChatPanel() {
                                             : "auto",
 
                                     padding: "20px",
+
                                     lineHeight: 1.8,
+
                                     whiteSpace: "pre-wrap",
+
+                                    overflowWrap: "break-word",
+
                                     fontSize: "15px",
 
                                     background:
@@ -211,7 +260,15 @@ export default function ChatPanel() {
                                 </div>
 
                                 <div>
-                                    {message.content}
+                                    {
+                                        typeof message.content === "string"
+                                            ? message.content
+                                            : JSON.stringify(
+                                                message.content,
+                                                null,
+                                                2
+                                            )
+                                    }
                                 </div>
 
                             </div>
@@ -269,8 +326,11 @@ export default function ChatPanel() {
 
                     <input
                         value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => {
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                        }}
+
+                        onKeyDown={(e) => {
 
                             if (
                                 e.key === "Enter" &&
@@ -282,7 +342,9 @@ export default function ChatPanel() {
                                 sendMessage();
                             }
                         }}
+
                         placeholder="Ask HELIX anything..."
+
                         style={{
                             flex: 1,
                             background: "transparent",
@@ -296,6 +358,7 @@ export default function ChatPanel() {
                     <button
                         onClick={sendMessage}
                         disabled={loading}
+
                         style={{
                             background: "#f5f5f5",
                             color: "black",
@@ -304,8 +367,7 @@ export default function ChatPanel() {
                             borderRadius: "14px",
                             fontWeight: 600,
                             cursor: "pointer",
-                            opacity: loading ? 0.7 : 1,
-                            transition: "0.2s"
+                            opacity: loading ? 0.7 : 1
                         }}
                     >
                         {
