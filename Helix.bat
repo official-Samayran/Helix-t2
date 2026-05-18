@@ -39,7 +39,7 @@ echo [3/3] Starting Electron App...
 
 cd /d E:\Helix\ui\helix-dashboard
 
-start "Helix Electron" cmd /k "npm run dev"
+start "Helix Electron" cmd /k "npm run start"
 
 echo.
 echo =========================================

@@ -3,20 +3,25 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-
+  "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5173",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 4173"
+    "dev": "vite",
+    "electron": "electron .",
+    "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\""
   },
-
   "dependencies": {
+    "axios": "^1.7.2",
+    "framer-motion": "^11.2.10",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0"
   },
-
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.8"
+    "concurrently": "^8.2.2",
+    "electron": "^31.0.2",
+    "vite": "^5.3.1",
+    "wait-on": "^7.2.0"
   }
 }

@@ -1,46 +1,30 @@
 const { app, BrowserWindow } = require("electron");
+const path = require("path");
 
 let mainWindow;
 
 function createWindow() {
 
     mainWindow = new BrowserWindow({
-        width: 1400,
-        height: 900,
-        backgroundColor: "#050505",
-
+        width: 1600,
+        height: 950,
+        backgroundColor: "#000000",
+        autoHideMenuBar: true,
         webPreferences: {
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            preload: path.join(__dirname, "preload.cjs")
         }
     });
 
     mainWindow.loadURL(
-        "http://127.0.0.1:5173"
+        "http://localhost:5173"
     );
 
-    mainWindow.webContents.openDevTools();
-
-    mainWindow.webContents.on(
-        "did-fail-load",
-        (_, errorCode, errorDescription) => {
-
-            console.log(
-                "Failed loading UI:",
-                errorCode,
-                errorDescription
-            );
-        }
-    );
-
-    mainWindow.webContents.on(
-        "render-process-gone",
-        (_, details) => {
-
-            console.log(
-                "Renderer crashed:",
-                details
-            );
+    mainWindow.on(
+        "closed",
+        () => {
+            mainWindow = null;
         }
     );
 }
@@ -48,11 +32,28 @@ function createWindow() {
 app.whenReady().then(() => {
 
     createWindow();
+
+    app.on(
+        "activate",
+        () => {
+
+            if (
+                BrowserWindow.getAllWindows().length === 0
+            ) {
+                createWindow();
+            }
+        }
+    );
 });
 
-app.on("window-all-closed", () => {
+app.on(
+    "window-all-closed",
+    () => {
 
-    if (process.platform !== "darwin") {
-        app.quit();
+        if (
+            process.platform !== "darwin"
+        ) {
+            app.quit();
+        }
     }
-});
+);
