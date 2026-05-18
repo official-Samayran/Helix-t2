@@ -2,17 +2,11 @@ import json
 import os
 import re
 
-from models.ollama_client import (
-    OllamaClient
-)
+from models.ollama_client import OllamaClient
 
-from tools.project_tool import (
-    ProjectTool
-)
+from tools.project_tool import ProjectTool
 
-from models.project_state import (
-    ProjectState
-)
+from models.project_state import ProjectState
 
 
 class CodingAgent:
@@ -45,9 +39,12 @@ class CodingAgent:
         planner_prompt = f"""
 You are an expert software architect.
 
-Generate a JSON response only.
+Generate ONLY valid JSON.
 
-The JSON format must be:
+DO NOT write explanations.
+DO NOT write markdown outside JSON.
+
+JSON FORMAT:
 
 {{
     "project_name": "",
@@ -62,11 +59,17 @@ The JSON format must be:
     ]
 }}
 
+RULES:
+- dependencies must contain ONLY real installable packages
+- never include Python
+- never include Node
+- never include programming languages
+- never include generic words
+- all dependencies must be valid pip/npm packages
+
 USER REQUEST:
 {user_prompt}
 """
-
-        raw_response = ""
 
         raw_response = OllamaClient.stream_generate(
             model=CodingAgent.MODEL,
@@ -127,8 +130,32 @@ USER REQUEST:
             run_command=run_command
         )
 
+        valid_dependencies = []
+
+        invalid_dependencies = [
+            "python",
+            "node",
+            "javascript",
+            "typescript",
+            "react",
+            "application",
+            "general purpose",
+            "general purpose application"
+        ]
+
+        for dependency in dependencies:
+
+            dependency = dependency.strip()
+
+            if dependency.lower() in invalid_dependencies:
+                continue
+
+            valid_dependencies.append(
+                dependency
+            )
+
         state.set_dependencies(
-            dependencies
+            valid_dependencies
         )
 
         project_path = ProjectTool.create_project(
@@ -171,9 +198,10 @@ USER REQUEST:
 {user_prompt}
 
 IMPORTANT:
-- Return code only
+- Return ONLY raw code
 - No markdown
 - No explanations
+- No code fences
 """
 
             generated_code = OllamaClient.stream_generate(
@@ -205,7 +233,7 @@ IMPORTANT:
                 file_path
             )
 
-        if dependencies:
+        if valid_dependencies:
 
             print(
                 f"[{__import__('datetime').datetime.now()}] Installing dependencies...\n"
@@ -213,14 +241,12 @@ IMPORTANT:
 
             ProjectTool.install_dependencies(
                 project_path,
-                dependencies
+                valid_dependencies
             )
-
-        if dependencies:
 
             ProjectTool.create_requirements_file(
                 project_path,
-                dependencies
+                valid_dependencies
             )
 
         print(
@@ -233,4 +259,3 @@ IMPORTANT:
             "project_path": project_path,
             "state": state.to_dict()
         }
-    

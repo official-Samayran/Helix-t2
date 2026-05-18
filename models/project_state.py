@@ -2,9 +2,9 @@ class ProjectState:
 
     def __init__(
         self,
-        project_name,
-        project_type,
-        run_command
+        project_name="",
+        project_type="",
+        run_command=""
     ):
 
         self.project_name = project_name
@@ -20,6 +20,40 @@ class ProjectState:
         self.errors = []
 
         self.dependencies = []
+
+    def set_dependencies(
+        self,
+        dependencies
+    ):
+
+        self.dependencies = dependencies
+
+    def add_generated_file(
+        self,
+        file_path
+    ):
+
+        self.generated_files.append(
+            file_path
+        )
+
+    def add_completed_step(
+        self,
+        step
+    ):
+
+        self.completed_steps.append(
+            step
+        )
+
+    def add_error(
+        self,
+        error
+    ):
+
+        self.errors.append(
+            error
+        )
 
     def to_dict(self):
 
